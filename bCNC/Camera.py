@@ -39,7 +39,9 @@ class Camera:
 	def __init__(self, prefix=""):
 		if cv is None: return
 		self.prefix  = prefix
-		self.idx     = Utils.getInt("Camera", prefix)
+		#self.idx     = Utils.getInt("Camera", prefix)
+		#print(self.idx)
+		self.idx     = 0
 		self.props   = self._getCameraProperties(prefix)
 		self.camera  = None
 		self.image   = None

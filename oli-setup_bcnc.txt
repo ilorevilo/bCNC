@@ -1,0 +1,8 @@
+conda create -n bcnc python=2.7
+pip install bcnc
+conda install -c menpo opencv
+
+start with:
+python -m bCNC
+
+in camera.py change self.idx = 1
