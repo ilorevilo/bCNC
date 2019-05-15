@@ -16,6 +16,10 @@ except ImportError:
 	from tkinter import *
 	import tkinter.messagebox as tkMessageBox
 
+# added by oli
+from time import sleep
+#
+
 import math
 from math import * #Math in DRO
 
@@ -1036,7 +1040,44 @@ class StateFrame(CNCRibbon.PageExLabelFrame):
 		tkExtra.Balloon.set(self.overrideScale, _("Set Feed/Rapid/Spindle Override. Right or Double click to reset."))
 
 		self.overrideCombo.set(OVERRIDES[0])
-
+		
+		#####################
+		# add new button for timed control of dispensing
+		
+		# Feed speed
+		row += 2
+		col = 0
+		Label(f, text=_("Dispensing time [ms]:")).grid(row=row, column=col, sticky=E)
+		
+		col += 1
+		self.dispensing_time = tkExtra.FloatEntry(f, background="White", disabledforeground="Black", width=5)
+		self.dispensing_time.grid(row=row, column=col, sticky=EW)
+		#self.feedRate.bind('<Return>',   self.setFeedRate)
+		#self.feedRate.bind('<KP_Enter>', self.setFeedRate)
+		#tkExtra.Balloon.set(self.feedRate, _("Feed Rate [F#]"))
+		self.addWidget(self.dispensing_time)
+		
+		#row += 2
+		col += 1
+		#self.xzero = Button(self, text=_("X=0"),
+		#command=self.setX0,
+		#activebackground="LightYellow",
+		#padx=2, pady=1)
+		
+		b = Button(f, text=_("Fire!"),
+				#image=Utils.icons["spinningtop"],
+				command=self.timedDispense,
+				#compound=LEFT,
+				#indicatoron=False,
+				#variable=self.spindle,
+				padx=1,
+				pady=0)
+		#tkExtra.Balloon.set(b, _("Start/Stop spindle (M3/M5)"))
+		b.grid(row=row, column=col, pady=0, sticky=NSEW)
+		self.addWidget(b)
+		
+		#################
+		
 		# ---
 		row += 2
 		col = 0
@@ -1051,7 +1092,7 @@ class StateFrame(CNCRibbon.PageExLabelFrame):
 		tkExtra.Balloon.set(b, _("Start/Stop spindle (M3/M5)"))
 		b.grid(row=row, column=col, pady=0, sticky=NSEW)
 		self.addWidget(b)
-
+		
 		col += 1
 		b = Scale(f,	variable=self.spindleSpeed,
 				command=self.spindleControl,
@@ -1194,6 +1235,19 @@ class StateFrame(CNCRibbon.PageExLabelFrame):
 		else:
 			self.sendGCode("M5")
 
+	def timedDispense(self):
+		if self._gUpdate: return
+		# Avoid sending commands before unlocking
+		if CNC.vars["state"] in (Sender.CONNECTED, Sender.NOT_CONNECTED): return
+		self.sendGCode("M3 S%d"%(self.spindleSpeed.get()))
+		duration = int(self.dispensing_time.get())#/1000
+		#sleep(duration)
+		self.after(duration,self. finishDispense)
+		#self.sendGCode("M5")
+	
+	def finishDispense(self):
+		self.sendGCode("M5")
+	
 	#----------------------------------------------------------------------
 	def coolantMist(self, event=None):
 		if self._gUpdate: return
