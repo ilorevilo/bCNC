@@ -1355,6 +1355,8 @@ class CameraFrame(CNCRibbon.PageFrame):
 	def __init__(self, master, app):
 		CNCRibbon.PageFrame.__init__(self, master, "Probe:Camera", app)
 
+		# list of locations where to dispense
+		self.disp_loc = []
 		# ==========
 		lframe = LabelFrame(self, text=_("Camera"), foreground="DarkBlue")
 		lframe.pack(side=TOP, fill=X, expand=YES)
@@ -1467,6 +1469,82 @@ class CameraFrame(CNCRibbon.PageFrame):
 		self.location.config(command=self.updateValues)
 		self.spindleX = None
 		self.spindleY = None
+
+	# add own dispensing options here...
+		row += 1
+		Label(lframe, text=_("Register:")).grid(row=row, column=0, sticky=E)
+		b = Button(lframe, text=_("mark_travel_z"),
+				command=self.mark_travel_z,
+				padx=1,
+				pady=1)
+		#tkExtra.Balloon.set(b, _("Mark spindle position for calculating offset"))
+		b.grid(row=row, column=0, sticky=EW)
+
+		b = Button(lframe, text=_("mark_dispense_z"),
+				command=self.mark_dispense_z,
+				padx=1,
+				pady=1)
+		b.grid(row=row, column=1, sticky=EW)
+		
+		b = Button(lframe, text=_("add_disp_loc"),
+				command=self.add_disp_loc,
+				padx=1,
+				pady=1)
+		b.grid(row=row, column=2, sticky=EW)
+		
+		b = Button(lframe, text=_("start_disp"),
+				command=self.start_disp,
+				padx=1,
+				pady=1)
+		b.grid(row=row, column=3, sticky=EW)
+		row += 1
+		self.dispensing_time = tkExtra.FloatEntry(lframe, background="White", disabledforeground="Black", width=5)
+		self.dispensing_time.grid(row=row, column=0, sticky=EW)
+
+		b = Button(lframe, text=_("clear coord"),
+				command=self.clear_disp_loc,
+				padx=1,
+				pady=1)
+		b.grid(row=row, column=1, sticky=EW)
+		
+	def start_disp(self):
+		dx = float(self.dx.get())
+		dy = float(self.dy.get())
+		tdisp = float(self.dispensing_time.get())
+		
+		for coordinate in self.disp_loc:
+			self.sendGCode("G0Z%g"%(self.travel_z))	# move z to travel pos
+
+			wx, wy = coordinate[0], coordinate[1]
+			print("moving to coordinate", wx,wy)
+			#self.sendGCode("G92X%gY%g"%(dx+wx,dy+wy))
+			self.sendGCode("G0X%gY%g"%(wx,wy)) # move to location (subtract camera offset)
+			
+			self.sendGCode("G0Z%g"%(self.dispense_z)) # move to dispense z
+			
+			print(tdisp)
+			self.sendGCode("M3")# S%d"%(self.spindleSpeed.get())) # dispense
+			self.sendGCode("G4P%g"%(tdisp))
+			self.sendGCode("M5")
+			#if self._gUpdate: return # Avoid sending commands before unlocking
+
+		self.sendGCode("G0Z%g"%(self.travel_z)) #travel up in the end	
+	
+	def clear_disp_loc(self):
+		self.disp_loc = []
+	
+	def add_disp_loc(self):
+		new_coord = [CNC.vars["wx"],CNC.vars["wy"]]
+		self.disp_loc.append(new_coord)
+		print("append position", new_coord)
+	
+	def mark_travel_z(self):
+		self.travel_z = CNC.vars["wz"]
+		print ("setting travel_z to " + str(self.travel_z))
+		
+	def mark_dispense_z(self):
+		self.dispense_z = CNC.vars["wz"]
+		print ("setting dispense_z to " + str(self.dispense_z))
 
 	#-----------------------------------------------------------------------
 	def saveConfig(self):
@@ -1597,7 +1675,6 @@ class CameraFrame(CNCRibbon.PageFrame):
 #		else:
 #			self.sendGCode("G92.1")
 #		self.sendGCode("G0X%gY%g"%(wx,wy))
-
 
 #===============================================================================
 # Tool Group
