@@ -1492,21 +1492,37 @@ class CameraFrame(CNCRibbon.PageFrame):
 				pady=1)
 		b.grid(row=row, column=2, sticky=EW)
 		
-		b = Button(lframe, text=_("start_disp"),
-				command=self.start_disp,
-				padx=1,
-				pady=1)
-		b.grid(row=row, column=3, sticky=EW)
-		row += 1
-		self.dispensing_time = tkExtra.FloatEntry(lframe, background="White", disabledforeground="Black", width=5)
-		self.dispensing_time.grid(row=row, column=0, sticky=EW)
-
 		b = Button(lframe, text=_("clear coord"),
 				command=self.clear_disp_loc,
 				padx=1,
 				pady=1)
-		b.grid(row=row, column=1, sticky=EW)
+		b.grid(row=row, column=3, sticky=EW)		
 		
+		row += 1
+		
+		Label(lframe, text=_("disp t [s]")).grid(row=row, column=0, sticky=E)
+		self.dispensing_time = tkExtra.FloatEntry(lframe, background="White", disabledforeground="Black", width=5)
+		self.dispensing_time.set(0.5)
+		self.dispensing_time.grid(row=row, column=1, sticky=EW)
+		
+		b = Button(lframe, text=_("Fire!"),
+		command=self.single_disp,
+		padx=1,
+		pady=1)
+		b.grid(row=row, column=2, sticky=EW)
+		
+		b = Button(lframe, text=_("start_disp"),
+		command=self.start_disp,
+		padx=1,
+		pady=1)
+		b.grid(row=row, column=3, sticky=EW)
+
+	def single_disp(self):
+		tdisp = float(self.dispensing_time.get())
+		self.sendGCode("M3")# # dispense
+		self.sendGCode("G4P%g"%(tdisp))
+		self.sendGCode("M5")		
+
 	def start_disp(self):
 		dx = float(self.dx.get())
 		dy = float(self.dy.get())
@@ -1518,7 +1534,7 @@ class CameraFrame(CNCRibbon.PageFrame):
 			wx, wy = coordinate[0], coordinate[1]
 			print("moving to coordinate", wx,wy)
 			#self.sendGCode("G92X%gY%g"%(dx+wx,dy+wy))
-			self.sendGCode("G0X%gY%g"%(wx,wy)) # move to location (subtract camera offset)
+			self.sendGCode("G0X%gY%g"%(wx+dx,wy+dy)) # move to location (subtract camera offset)
 			
 			self.sendGCode("G0Z%g"%(self.dispense_z)) # move to dispense z
 			
